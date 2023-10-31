@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "TextFileProcessor": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\Иван\\Desktop\\working folder\"\r\n\"C:\\Users\\Иван\\Desktop\\output folder\"",
+      "hotReloadEnabled": true
+    }
+  }
+}
