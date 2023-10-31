@@ -151,7 +151,8 @@ namespace TextFileProcessorService
                     }
                 }
 
-                Trace.WriteLine($"Workers actualized: {workers.Count} workers are processing {workItems.Count} files");
+                int count = workers.Where(x => !x.Finished).Count();
+                Trace.WriteLine($"Workers actualized: {count} workers are processing {workItems.Count} files");
             }
         }
     }

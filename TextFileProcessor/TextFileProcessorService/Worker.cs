@@ -41,7 +41,7 @@ namespace TextFileProcessorService
                 }
 
                 Trace.WriteLine($"Worker {workerId} finished");
-            });
+            }, cancellationToken);
         }
 
         int GetTotalChars(string fileName)
