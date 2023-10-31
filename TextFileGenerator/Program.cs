@@ -18,6 +18,8 @@
             Console.WriteLine();
             Console.WriteLine("Press any key to start");
 
+            Directory.CreateDirectory(inputFolder);
+
             Random random = new Random();
 
             bool isStarted = false;

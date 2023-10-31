@@ -2,7 +2,7 @@
   "profiles": {
     "TextFileGenerator": {
       "commandName": "Project",
-      "commandLineArgs": "\"C:\\Users\\Иван\\Desktop\\working folder\""
+      "commandLineArgs": "\"..\\..\\..\\..\\input\""
     }
   }
 }
