@@ -22,11 +22,6 @@ namespace TextFileProcessorService
 
         public TextFileProcessor(string inputFolder, string outputFolder)
         {
-            if (!Directory.Exists(inputFolder))
-            {
-                throw new ArgumentException($"Folder '{Path.GetFullPath(inputFolder)}' must exist", nameof(inputFolder));
-            }
-
             this.inputFolder = inputFolder;
             this.outputFolder = outputFolder;
         }
@@ -41,10 +36,8 @@ namespace TextFileProcessorService
                 return;
             }
 
-            if (!Directory.Exists(outputFolder))
-            {
-                Directory.CreateDirectory(outputFolder);
-            }
+            Directory.CreateDirectory(inputFolder);
+            Directory.CreateDirectory(outputFolder);
 
             cancellationSource = new CancellationTokenSource();
 
