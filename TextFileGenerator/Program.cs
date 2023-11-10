@@ -4,6 +4,11 @@
     {
         static string inputFolder = "input";
 
+        const int minSizeChars = 1;
+        const int maxSizeChars = 100;
+
+        static int fileCounter = 0;
+
         static void Main(string[] args)
         {
             Console.CursorVisible = false;
@@ -14,7 +19,7 @@
             }
 
             Console.WriteLine("Sample file generator");
-            Console.WriteLine($"will generate text files (1 - 10 mb) in {Path.GetFullPath(inputFolder)}");
+            Console.WriteLine($"will generate text files ({minSizeChars} - {maxSizeChars} chars) in {Path.GetFullPath(inputFolder)}");
             Console.WriteLine();
             Console.WriteLine("Press any key to start");
 
@@ -38,22 +43,18 @@
                     {
                         while(!cancellationSource.Token.IsCancellationRequested)
                         {
-                            const int megabyte = 1024 * 1024;
-                            int estimatedFileSize = random.Next(1 * megabyte, 10 * megabyte);
-                            string fileName = Guid.NewGuid() + $"-({estimatedFileSize / megabyte} mb)" + ".txt";
+                            int charCount = random.Next(minSizeChars, maxSizeChars + 1);
+                            string fileName = $"{fileCounter++:00000}-({charCount} chars).txt";
 
                             using (var writer = new StreamWriter(Path.Combine(inputFolder, fileName)))
                             {
-                                while (writer.BaseStream.Length < estimatedFileSize)
-                                {
-                                    string sampleLine = "".PadRight(4 * 1024, 'a');
-                                    writer.Write(sampleLine);
-                                }
+                                string sampleLine = "".PadRight(charCount, 'a');
+                                writer.Write(sampleLine);
                             }
-                            Console.WriteLine($"File {fileName} ({estimatedFileSize / megabyte} mb) added");
+                            Console.WriteLine($"File {fileName} added");
 
                             // emulating a slowness
-                            Task.Delay(500).Wait();
+                            Task.Delay(100).Wait();
                         }
                     });
                 }

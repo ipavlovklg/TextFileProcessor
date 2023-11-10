@@ -17,6 +17,8 @@ namespace TextFileProcessorService
         ConcurrentBag<WorkItem> workItems;
         CancellationTokenSource cancellationSource;
 
+        FileSystemWatcher fsWatcher;
+
         List<Worker> workers = new List<Worker>();
         object workersSyncRoot = new object();
 
@@ -41,45 +43,19 @@ namespace TextFileProcessorService
 
             cancellationSource = new CancellationTokenSource();
 
+            InitAndStartFsWatcher();
+
             WorkItem[] initialWorkItems = Directory.GetFiles(inputFolder, "*.txt")
                 .Select(inputFile => new WorkItem(inputFile, outputFolder))
                 .ToArray();
 
             workItems = new ConcurrentBag<WorkItem>(initialWorkItems);
 
-            serviceTask = Task.Run(() =>
-            {
-                Trace.WriteLine("Service task started");
+            Trace.WriteLine("Service started");
 
-                ActualizeWorkers();
+            ActualizeWorkers();
 
-                // TODO: need a better logic to handle pasting of multiple files: some pasted files can be lost now
-                // https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher.internalbuffersize
-                using (var watcher = new FileSystemWatcher(inputFolder)
-                {
-                    InternalBufferSize = 64 * 1024,
-                    EnableRaisingEvents = false,
-                    IncludeSubdirectories = false,
-                    Filter = "*.txt"
-                })
-                {
-                    while (!cancellationSource.Token.IsCancellationRequested)
-                    {
-                        var result = watcher.WaitForChanged(WatcherChangeTypes.Created, 1000);
-                        if (result.TimedOut)
-                        {
-                            continue;
-                        }
-
-                        string inputFileName = Path.Combine(inputFolder, result.Name);
-                        workItems.Add(new WorkItem(inputFileName, outputFolder));
-
-                        ActualizeWorkers();
-                    }
-                };
-
-                Trace.WriteLine("Service task finished");
-            });
+            fsWatcher.EnableRaisingEvents = true;
         }
 
         /// <summary>
@@ -91,6 +67,8 @@ namespace TextFileProcessorService
             {
                 return;
             }
+
+            StopAndDisposeFsWatcher();
 
             if (!cancellationSource.IsCancellationRequested)
             {
@@ -109,17 +87,39 @@ namespace TextFileProcessorService
                 }
             }
 
-            if (serviceTask.Status == TaskStatus.Running)
-            {
-                Trace.WriteLine($"Service task is terminating...");
-
-                serviceTask.Wait();
-            }
-
             cancellationSource.Dispose();
             cancellationSource = null;
 
             Trace.WriteLine($"Service stopped");
+        }
+
+        void InitAndStartFsWatcher()
+        {
+            fsWatcher = new FileSystemWatcher(inputFolder)
+            {
+                IncludeSubdirectories = false,
+                NotifyFilter = NotifyFilters.FileName,
+                Filter = "*.txt"
+            };
+            fsWatcher.Created += OnFileAdded;
+            fsWatcher.EnableRaisingEvents = true;
+        }
+
+        void StopAndDisposeFsWatcher()
+        {
+            fsWatcher.EnableRaisingEvents = false;
+            fsWatcher.Dispose();
+            fsWatcher = null;
+        }
+
+        void OnFileAdded(object sender, FileSystemEventArgs e)
+        {
+            Trace.WriteLine($"File added: {e.Name}");
+
+            string inputFileName = Path.Combine(inputFolder, e.Name);
+            workItems.Add(new WorkItem(inputFileName, outputFolder));
+
+            ActualizeWorkers();
         }
 
         /// <summary>
@@ -132,7 +132,8 @@ namespace TextFileProcessorService
                 workers = workers.Where(x => !x.Finished).ToList();
 
                 int nonFinishedWorkersCount = workers.Count;
-                int requiredWorkersCount = Math.Min(workItems.Count, NumberOfWorkers);
+                int workItemsCount = workItems.Count;
+                int requiredWorkersCount = Math.Min(workItemsCount, NumberOfWorkers);
 
                 int addCount = requiredWorkersCount - nonFinishedWorkersCount;
                 if (addCount > 0)
@@ -145,7 +146,7 @@ namespace TextFileProcessorService
                 }
 
                 int count = workers.Where(x => !x.Finished).Count();
-                Trace.WriteLine($"Workers actualized: {count} workers are processing {workItems.Count} files");
+                Trace.WriteLine($"Workers actualized: {count} workers are processing {workItemsCount} files");
             }
         }
     }

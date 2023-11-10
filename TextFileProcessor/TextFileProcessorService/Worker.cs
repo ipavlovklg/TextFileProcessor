@@ -37,7 +37,7 @@ namespace TextFileProcessorService
                     Trace.WriteLine($"Worker {workerId}: file {Path.GetFileName(workItem.InputFileName)} processed successfully");
 
                     // emulating a slowness
-                    Task.Delay(3000).Wait();
+                    Task.Delay(500).Wait();
                 }
 
                 Trace.WriteLine($"Worker {workerId} finished");
